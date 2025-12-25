@@ -47,6 +47,17 @@
             gap: 14px;
             box-shadow: 0 0 40px 10px #e0b3ff22;
         }
+        .emoji-btn {
+            font-size: 5rem;
+            background: rgba(80,60,120,0.7);
+            border: 2px solid #b38fe0;
+            border-radius: 12px;
+            margin: 0 2px;
+            cursor: pointer;
+            transition: border 0.2s, box-shadow 0.2s, font-size 0.2s;
+            box-shadow: 0 0 12px 2px #e0b3ff55;
+            filter: blur(0.2px) brightness(1.1);
+        }
         #gameArea {
             display: none;
             position: fixed;
@@ -88,9 +99,26 @@
         </div>
     </div>
     <div id="gameArea">
+        <div id="taskBar" style="display:none;position:absolute;top:0;left:0;width:100vw;height:48px;background:rgba(40,30,60,0.95);color:#fff;font-size:1.2rem;z-index:20;display:flex;align-items:center;justify-content:center;letter-spacing:1px;box-shadow:0 2px 16px #e0b3ff44;">go to work.</div>
         <div id="player"></div>
-        <div style="position:absolute;top:10px;left:10px;font-size:1.1rem;">
-            <span id="greeting"></span>
+        <div id="locations">
+            <div class="location" id="loc-home" style="position:absolute;top:calc(50px + 25vh);left:calc(50px + 25vw);font-size:2.5rem;">🏠</div>
+            <div class="location" id="loc-work" style="position:absolute;top:calc(50px + 25vh);right:calc(50px + 25vw);font-size:2.5rem;">🏢</div>
+            <div class="location" id="loc-casino" style="position:absolute;bottom:calc(50px + 25vh);right:calc(50px + 25vw);font-size:2.5rem;">🎰</div>
+            <div class="location" id="loc-shop" style="position:absolute;bottom:calc(50px + 25vh);left:calc(50px + 25vw);font-size:2.5rem;">🛒</div>
+        </div>
+        <div id="gameClock" style="position:absolute;top:60px;right:32px;font-size:1.3rem;color:#e0e0ff;z-index:10;">06:00 am</div>
+        <div id="hiddenTimer" style="display:none;"></div>
+        <div id="workTab" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(40,30,60,0.98);color:#e0e0ff;padding:32px 48px;border-radius:18px;box-shadow:0 0 40px 10px #e0b3ff99;z-index:1001;font-size:1.3rem;text-align:center;">
+            <div id="paperMinigame" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div id="paperBox" style="background:#fff;color:#222;width:320px;min-height:120px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;border-radius:10px;box-shadow:0 0 16px 2px #b38fe0;margin-bottom:18px;padding:18px 12px;">[Paper text here]</div>
+                <div style="display:flex;gap:18px;">
+                    <button id="stampBtn" style="padding:10px 28px;font-size:1.1rem;background:#b38fe0;color:#fff;border:none;border-radius:8px;cursor:pointer;">Stamp</button>
+                    <button id="ignoreBtn" style="padding:10px 28px;font-size:1.1rem;background:#ff4f8b;color:#fff;border:none;border-radius:8px;cursor:pointer;">Ignore</button>
+                </div>
+            </div>
+            <br>
+            <button id="closeWorkTab" style="padding:8px 24px;font-size:1rem;background:#ff4f8b;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-top:18px;">Close</button>
         </div>
     </div>
     <script>
@@ -106,8 +134,11 @@
             selectedEmoji = '🎩';
             document.getElementById('emojiModal').style.display = 'none';
         };
-        // Start game logic
-        document.getElementById('startBtn').onclick = function() {
+        // Start game logic (minimal)
+        const startBtn = document.getElementById('startBtn');
+        // Global game time variables
+        let minutes = 0, hours = 6, isAM = true;
+        startBtn.onclick = function() {
             const name = document.getElementById('playerName').value.trim();
             if (!selectedEmoji || !name) {
                 alert('Please choose an emoji and enter your name.');
@@ -116,32 +147,120 @@
             document.getElementById('startScreen').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             document.getElementById('player').textContent = '❓';
-            document.getElementById('greeting').textContent = `Welcome, ${name}`;
-            // Set initial position
-            playerX = 440;
-            playerY = 280;
-            updatePlayerPosition();
+            // Center character
+            requestAnimationFrame(() => {
+                playerX = Math.floor(window.innerWidth / 2);
+                playerY = Math.floor(window.innerHeight / 2);
+                player.style.left = (playerX - player.offsetWidth / 2) + 'px';
+                player.style.top = (playerY - player.offsetHeight / 2) + 'px';
+            });
             // Play background music
-            document.getElementById('bgMusic').play();
+            const bgMusic = document.getElementById('bgMusic');
+            bgMusic.volume = 0.5;
+            bgMusic.play();
+            // Game clock and timer logic
+            let gameTimeInterval = null;
+            let lastGameTimeUpdate = null;
+            function startGameClock() {
+                minutes = 0;
+                hours = 6;
+                isAM = true;
+                updateGameClock();
+                lastGameTimeUpdate = Date.now();
+                if (gameTimeInterval) clearInterval(gameTimeInterval);
+                gameTimeInterval = setInterval(() => {
+                    const now = Date.now();
+                    const elapsed = now - lastGameTimeUpdate;
+                    if (elapsed >= 5000) {
+                        lastGameTimeUpdate += 5000;
+                        minutes++;
+                        if (minutes >= 60) {
+                            minutes = 0;
+                            hours++;
+                            if (hours === 12) {
+                                isAM = !isAM;
+                            }
+                            if (hours > 12) {
+                                hours = 1;
+                            }
+                        }
+                        updateGameClock();
+                    }
+                    // Hidden timer update (if needed for future use)
+                    document.getElementById('hiddenTimer').textContent = Math.floor((now - lastGameTimeUpdate) / 1000);
+                }, 100);
+            }
+            function updateGameClock() {
+                const pad = n => n.toString().padStart(2, '0');
+                const period = isAM ? 'am' : 'pm';
+                document.getElementById('gameClock').textContent = `${pad(hours)}:${pad(minutes)} ${period}`;
+            }
+            // Task bar logic
+            window.taskBarInterval = setInterval(updateTaskBar, 500);
+            updateTaskBar();
+            startGameClock();
         };
-        // Player movement logic
-        let playerX = 440, playerY = 280;
-        const player = document.getElementById('player');
-        function updatePlayerPosition() {
-            player.style.left = playerX + 'px';
-            player.style.top = playerY + 'px';
+        // Task bar update function
+        function updateTaskBar() {
+            const taskBar = document.getElementById('taskBar');
+            // Show task bar if time is between 6:00 and 8:00 am
+            if ((hours === 6 || (hours === 7 && minutes < 60) || (hours === 8 && minutes === 0)) && isAM) {
+                taskBar.style.display = 'flex';
+                taskBar.textContent = 'go to work.';
+            } else {
+                taskBar.style.display = 'none';
+            }
         }
+        // Player movement logic (minimal)
+        let playerX = 0, playerY = 0;
+        const player = document.getElementById('player');
         document.addEventListener('keydown', function(e) {
             if (document.getElementById('gameArea').style.display === 'block') {
+                const maxX = window.innerWidth - 64;
+                const maxY = window.innerHeight - 64;
                 switch(e.key) {
                     case 'ArrowUp': playerY = Math.max(0, playerY - 20); break;
-                    case 'ArrowDown': playerY = Math.min(560, playerY + 20); break;
+                    case 'ArrowDown': playerY = Math.min(maxY, playerY + 20); break;
                     case 'ArrowLeft': playerX = Math.max(0, playerX - 20); break;
-                    case 'ArrowRight': playerX = Math.min(860, playerX + 20); break;
+                    case 'ArrowRight': playerX = Math.min(maxX, playerX + 20); break;
                 }
-                updatePlayerPosition();
+                player.style.left = (playerX - player.offsetWidth / 2) + 'px';
+                player.style.top = (playerY - player.offsetHeight / 2) + 'px';
+                // Check collision with work location
+                checkWorkCollision();
             }
         });
+        window.addEventListener('resize', function() {
+            if (document.getElementById('gameArea').style.display === 'block') {
+                playerX = Math.floor(window.innerWidth / 2);
+                playerY = Math.floor(window.innerHeight / 2);
+                player.style.left = (playerX - player.offsetWidth / 2) + 'px';
+                player.style.top = (playerY - player.offsetHeight / 2) + 'px';
+            }
+        });
+        // Collision detection for work location and open work tab
+        function checkWorkCollision() {
+            const playerRect = player.getBoundingClientRect();
+            const workElem = document.getElementById('loc-work');
+            const workRect = workElem.getBoundingClientRect();
+            if (
+                playerRect.left < workRect.right &&
+                playerRect.right > workRect.left &&
+                playerRect.top < workRect.bottom &&
+                playerRect.bottom > workRect.top
+            ) {
+                // Only open if work is open: 6am-11am (AM) or 12pm-4pm (PM)
+                const workOpen = (isAM && hours >= 6 && hours <= 11) || (!isAM && hours >= 12 && hours <= 4);
+                if (workOpen) {
+                    document.getElementById('workTab').style.display = 'block';
+                    // Show minigame paper (placeholder logic)
+                    document.getElementById('paperBox').textContent = 'You have new paper work!';
+                }
+            }
+        }
+        document.getElementById('closeWorkTab').onclick = function() {
+            document.getElementById('workTab').style.display = 'none';
+        };
     </script>
 </body>
 </html>
