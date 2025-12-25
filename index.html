@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Last Bet</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #2e1a47 0%, #3a3e6e 40%, #e0b3ff 100%);
+            color: #e0e0ff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            filter: blur(0.5px) brightness(0.95);
+        }
+        .center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            backdrop-filter: blur(2px);
+        }
+        .emoji-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(40,30,60,0.92);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 80px 20px #e0b3ff44;
+            backdrop-filter: blur(6px);
+        }
+        .emoji-scroll {
+            width: 700px;
+            max-width: 95vw;
+            height: 200px;
+            overflow-x: auto;
+            background: rgba(60,40,80,0.8);
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 0 40px 10px #e0b3ff22;
+        }
+        #gameArea {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(120deg, #2e1a47 0%, #3a3e6e 60%, #e0b3ff 100%);
+            border-radius: 0;
+            margin: 0;
+            overflow: hidden;
+            box-shadow: none;
+            backdrop-filter: blur(2px);
+        }
+        #player {
+            position: absolute;
+            font-size: 2.8rem;
+            transition: left 0.1s, top 0.1s;
+            filter: drop-shadow(0 0 12px #e0b3ffcc) blur(0.2px);
+        }
+    </style>
+</head>
+<body>
+    <audio id="bgMusic" src="backgroundmusic.mp3" loop></audio>
+    <div class="center" id="startScreen">
+        <h1>The Last Bet</h1>
+        <p>Choose your character:</p>
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="12" style="padding:8px; font-size:1rem; border-radius:6px; border:1px solid #444;">
+        <button id="startBtn" style="margin-top:20px; padding:10px 24px; font-size:1.1rem; background:#e63946; color:#fff; border:none; border-radius:8px; cursor:pointer;">Start Game</button>
+    </div>
+    <div class="emoji-modal" id="emojiModal">
+        <h2 style="color:#e63946;">Choose your character:</h2>
+        <div class="emoji-scroll" id="emojiSelect">
+            <button class="emoji-btn" id="gamblerBtn">🎩</button>
+        </div>
+        <div id="gamblerDesc" style="display:none; margin-top:24px; background:rgba(60,40,80,0.8); color:#e0e0ff; border-radius:12px; padding:18px; box-shadow:0 0 24px 6px #e0b3ff99; max-width:400px;">
+            <h3 style="margin-top:0; color:#ff4f8b;">🎩 The Gambler</h3>
+            <p style="font-size:1.2rem; font-style:italic; color:#e0b3ff;">"Just one more. I've got a good feeling."</p>
+            <button id="confirmGambler" style="margin-top:12px; padding:8px 20px; font-size:1rem; background:#ff4f8b; color:#fff; border:none; border-radius:8px; cursor:pointer;">Confirm</button>
+        </div>
+    </div>
+    <div id="gameArea">
+        <div id="player"></div>
+        <div style="position:absolute;top:10px;left:10px;font-size:1.1rem;">
+            <span id="greeting"></span>
+        </div>
+    </div>
+    <script>
+        // Only one emoji character
+        const gamblerBtn = document.getElementById('gamblerBtn');
+        const gamblerDesc = document.getElementById('gamblerDesc');
+        let selectedEmoji = null;
+        gamblerBtn.onclick = function() {
+            gamblerDesc.style.display = 'block';
+            gamblerBtn.classList.add('selected');
+        };
+        document.getElementById('confirmGambler').onclick = function() {
+            selectedEmoji = '🎩';
+            document.getElementById('emojiModal').style.display = 'none';
+        };
+        // Start game logic
+        document.getElementById('startBtn').onclick = function() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!selectedEmoji || !name) {
+                alert('Please choose an emoji and enter your name.');
+                return;
+            }
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('player').textContent = '❓';
+            document.getElementById('greeting').textContent = `Welcome, ${name}`;
+            // Set initial position
+            playerX = 440;
+            playerY = 280;
+            updatePlayerPosition();
+            // Play background music
+            document.getElementById('bgMusic').play();
+        };
+        // Player movement logic
+        let playerX = 440, playerY = 280;
+        const player = document.getElementById('player');
+        function updatePlayerPosition() {
+            player.style.left = playerX + 'px';
+            player.style.top = playerY + 'px';
+        }
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('gameArea').style.display === 'block') {
+                switch(e.key) {
+                    case 'ArrowUp': playerY = Math.max(0, playerY - 20); break;
+                    case 'ArrowDown': playerY = Math.min(560, playerY + 20); break;
+                    case 'ArrowLeft': playerX = Math.max(0, playerX - 20); break;
+                    case 'ArrowRight': playerX = Math.min(860, playerX + 20); break;
+                }
+                updatePlayerPosition();
+            }
+        });
+    </script>
+</body>
+</html>
